@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DroneHub - Integrated Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Map Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+    <script src="https://unpkg.com/proj4"></script>
+    
+    <!-- Chart Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Anuphan:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Anuphan', 'Inter', sans-serif; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* สกอร์บาร์สำหรับตารางและเนื้อหา */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 1.5rem;
+            z-index: 10;
+        }
+
+        /* Sidebar Transition */
+        #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        #sidebar.collapsed { width: 80px; }
+        #sidebar.collapsed .sidebar-text, 
+        #sidebar.collapsed .sidebar-header-text { display: none; }
+
+        /* Floating Menu Animation */
+        #map-controls {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 44px; height: 44px; overflow: hidden;
+        }
+        #map-controls.expanded { width: 240px; height: auto; }
+
+        .stat-card { transition: all 0.2s; }
+        .stat-card:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Tab Transition */
+        .view-section {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 relative z-30">
+        <div class="p-6 flex items-center justify-between">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="bg-blue-600 p-2 rounded-xl text-white shrink-0 shadow-lg shadow-blue-100">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight text-blue-900 sidebar-header-text whitespace-nowrap">DroneHub</span>
+            </div>
+            <button onclick="toggleSidebar()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
+                <i data-lucide="chevron-left" id="sidebar-toggle-icon" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4 overflow-x-hidden" id="nav-menu">
+            <button onclick="switchView('map')" id="btn-nav-map" class="w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left">
+                <i data-lucide="map" class="w-5 h-5 shrink-0"></i>
+                <span class="font-semibold text-sm sidebar-text whitespace-nowrap">แผนที่และภาพโดรน</span>
+            </button>
+            <button onclick="switchView('report')" id="btn-nav-report" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left">
+                <i data-lucide="file-bar-chart" class="w-5 h-5 shrink-0"></i>
+                <span class="font-semibold text-sm sidebar-text whitespace-nowrap">รายงานโครงการ</span>
+            </button>
+            <button class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left opacity-50 cursor-not-allowed">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 shrink-0"></i>
+                <span class="font-semibold text-sm sidebar-text whitespace-nowrap">รายงานจุดสำรวจ</span>
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-100">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                </div>
+                <div class="sidebar-text whitespace-nowrap">
+                    <p class="text-xs font-bold text-slate-700">Administrator</p>
+                    <p class="text-[10px] text-slate-400">Project Manager</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 relative">
+        
+        <!-- Header Area (ใช้ร่วมกัน) -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-20">
+            <div class="min-w-0">
+                <h2 id="header-subtitle" class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-0.5">Surveillance Dashboard</h2>
+                <h1 id="header-title" class="text-xl font-bold text-slate-900 truncate tracking-tight">โครงการบินโดรนก้อทุ่ง</h1>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <button id="btn-print" onclick="window.print()" class="hidden px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์รายงาน
+                </button>
+                <span id="badge-online" class="px-3 py-1.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-lg border border-green-100 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    SYSTEM ONLINE
+                </span>
+            </div>
+        </header>
+
+        <!-- ============================================== -->
+        <!-- VIEW 1: MAP DASHBOARD -->
+        <!-- ============================================== -->
+        <div id="view-map" class="view-section flex-1 flex flex-col overflow-hidden bg-slate-50">
+            <div class="flex-1 p-6 overflow-y-auto space-y-6">
+                <!-- Map KPIs -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">พื้นที่สำรวจทั้งหมด</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-black text-slate-800 tracking-tight">23,000</span>
+                            <span class="text-xs font-bold text-slate-400">ไร่</span>
+                        </div>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ความละเอียดภาพ (GSD)</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-black text-slate-800 tracking-tight">6</span>
+                            <span class="text-xs font-bold text-slate-400">ซม./พิกเซล</span>
+                        </div>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-blue-600">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ระยะเวลาใช้สำรวจทั้งหมด</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-black tracking-tight">38</span>
+                            <span class="text-xs font-bold opacity-70">วัน</span>
+                        </div>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">จำนวนบล๊อก (Block) การบิน</p>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-black text-slate-800 tracking-tight">6</span>
+                            <span class="text-xs font-bold text-slate-400">บล็อก</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden relative p-2 h-[calc(100vh-280px)] min-h-[500px]">
+                    <div id="map" class="shadow-inner relative z-10"></div>
+                    
+                    <!-- Floating Map Controls -->
+                    <div id="map-controls" class="absolute top-6 right-6 z-[1000] bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/50 p-2">
+                        <button onclick="toggleControls()" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors ml-auto">
+                            <i data-lucide="settings-2" class="w-5 h-5"></i>
+                        </button>
+                        
+                        <div class="mt-4 px-2 space-y-5 pb-2">
+                            <div class="space-y-3">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Map</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="changeBaseMap('googleHybrid')" class="text-[9px] font-bold py-2 bg-slate-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all">Hybrid</button>
+                                    <button onclick="changeBaseMap('cartoLight')" class="text-[9px] font-bold py-2 bg-slate-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all">Light</button>
+                                </div>
+                            </div>
+                            <div class="space-y-3 border-t border-slate-100 pt-4">
+                                <div class="flex justify-between items-center">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transparency</p>
+                                    <span id="opacity-val-text" class="text-[10px] font-bold text-blue-600">100%</span>
+                                </div>
+                                <input type="range" id="opacity-slider" min="0" max="100" value="100" class="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            </div>
+                            <button onclick="zoomToLayer()" class="w-full bg-slate-900 text-white text-[10px] py-3 rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+                                ซูมไปยังพื้นที่ภาพถ่าย
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Status -->
+                    <div class="absolute bottom-6 left-6 z-[1000] pointer-events-none">
+                        <div class="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/50 shadow-lg">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-[10px] font-bold text-slate-700 tracking-tight uppercase">Cloud COG Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: REPORT DASHBOARD -->
+        <!-- ============================================== -->
+        <div id="view-report" class="view-section hidden flex-1 flex flex-col overflow-y-auto bg-slate-50 w-full">
+            <div class="p-8 space-y-8 max-w-7xl mx-auto w-full">
+                
+                <!-- Report KPIs & Data Source Sync Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    
+                    <!-- 1. จำนวนบล็อกทั้งหมด -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จำนวนบล็อกทั้งหมด</p>
+                            <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="kpi-total-blocks" class="text-3xl font-black text-slate-800 tracking-tight">0</span>
+                            <span class="text-xs font-bold text-slate-400">บล็อก</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. ค่า GSD เฉลี่ยที่ทำการบิน -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ค่า GSD เฉลี่ยที่ทำการบิน</p>
+                            <i data-lucide="focus" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="kpi-avg-gsd" class="text-3xl font-black text-slate-800 tracking-tight">0.00</span>
+                            <span class="text-xs font-bold text-slate-400">ซม.</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. ผ่านเกณฑ์มาตรฐาน -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-center">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-green-50 rounded-bl-[100%] z-0"></div>
+                        <div class="flex justify-between items-start mb-2 relative z-10">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ผ่านเกณฑ์มาตรฐาน</p>
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1 relative z-10">
+                            <span id="kpi-pass-rate" class="text-3xl font-black text-green-600 tracking-tight">0</span>
+                            <span class="text-xs font-bold text-slate-400">บล็อก</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. ไม่ผ่านเกณฑ์ -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-center">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-[100%] z-0"></div>
+                        <div class="flex justify-between items-start mb-2 relative z-10">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ไม่ผ่านเกณฑ์</p>
+                            <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1 relative z-10">
+                            <span id="kpi-fail-rate" class="text-3xl font-black text-red-600 tracking-tight">0</span>
+                            <span class="text-xs font-bold text-slate-400">บล็อก</span>
+                        </div>
+                    </div>
+
+                    <!-- 5. ซิงค์ข้อมูล (Data Source Button) -->
+                    <div onclick="fetchGoogleSheetData()" class="stat-card bg-blue-600 p-5 rounded-2xl border border-blue-500 shadow-lg shadow-blue-200 flex flex-col justify-center items-center cursor-pointer group text-white h-full relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-white opacity-10 rounded-bl-[100%] z-0 transition-transform group-hover:scale-110"></div>
+                        <div class="relative z-10 flex flex-col items-center">
+                            <i data-lucide="refresh-cw" id="sync-icon" class="w-6 h-6 mb-2"></i>
+                            <span id="sync-text" class="text-sm font-bold tracking-tight">ซิงค์ข้อมูล</span>
+                            <span class="text-[9px] font-medium text-blue-200 mt-1 text-center">ดึงข้อมูล Google Sheets</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 gap-8">
+                    <!-- RMSE Chart -->
+                    <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="mb-6">
+                            <h3 class="text-base font-bold text-slate-800">เปรียบเทียบค่าความคลาดเคลื่อน (RMSEr vs ASPRS 2014)</h3>
+                            <p class="text-sm text-slate-500 mt-1">วิเคราะห์ความคลาดเคลื่อนทางตำแหน่งของแต่ละบล็อกการบิน <span class="font-bold text-green-500">(สีเขียว: ผ่านเกณฑ์)</span>, <span class="font-bold text-red-500">(สีแดง: ไม่ผ่านเกณฑ์)</span></p>
+                        </div>
+                        <div class="h-96 relative w-full">
+                            <canvas id="rmseChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Photo Bar Chart -->
+                    <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="mb-6">
+                            <h3 class="text-base font-bold text-slate-800">จำนวนภาพถ่ายรายแปลง</h3>
+                            <p class="text-sm text-slate-500 mt-1">แสดงจำนวนภาพถ่ายที่ใช้การประมวลผลในแต่ละบล็อกการบิน</p>
+                        </div>
+                        <div class="h-96 relative w-full">
+                            <canvas id="photoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">รายละเอียดตารางข้อมูลเชิงลึก (Process Checklist)</h3>
+                            <p class="text-xs text-slate-400 mt-1">ข้อมูลความละเอียด การประเมิน และผลลัพธ์เชิงตัวเลขทั้งหมด</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <th class="p-4 border-b border-slate-200 whitespace-nowrap">Block</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">Photo</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">GSD (cm)</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">Error X [m]</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">Error Y [m]</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">Error Z [m]</th>
+                                    <!-- Highlighted Column Header -->
+                                    <th class="p-4 border-b border-blue-200 bg-blue-50/50 text-blue-700 text-right whitespace-nowrap">RMSEr</th>
+                                    <th class="p-4 border-b border-slate-200 text-right whitespace-nowrap">ASPRS 2014</th>
+                                    <th class="p-4 border-b border-slate-200 text-center whitespace-nowrap">Final Product GSD</th>
+                                    <th class="p-4 border-b border-slate-200 text-center whitespace-nowrap">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="text-sm">
+                                <!-- แถวข้อมูลตาราง -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="pb-10 text-center">
+                    <p class="text-xs text-slate-400">สร้างรายงานอัตโนมัติจากระบบ DroneHub Dashboard</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // UI & NAVIGATION LOGIC
+        // ==========================================
+        let chartsRendered = false;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebar-toggle-icon');
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                icon.setAttribute('data-lucide', 'chevron-right');
+            } else {
+                icon.setAttribute('data-lucide', 'chevron-left');
+            }
+            lucide.createIcons();
+            
+            // รอให้ sidebar ยืดหดเสร็จแล้วรีเฟรชแผนที่
+            setTimeout(() => { 
+                if(!document.getElementById('view-map').classList.contains('hidden') && map) {
+                    map.invalidateSize(); 
+                }
+            }, 350);
+        }
+
+        function switchView(viewName) {
+            const viewMap = document.getElementById('view-map');
+            const viewReport = document.getElementById('view-report');
+            const btnMap = document.getElementById('btn-nav-map');
+            const btnReport = document.getElementById('btn-nav-report');
+            
+            const subtitle = document.getElementById('header-subtitle');
+            const title = document.getElementById('header-title');
+            const btnPrint = document.getElementById('btn-print');
+            const badgeOnline = document.getElementById('badge-online');
+
+            // Reset Styles
+            btnMap.className = "w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left";
+            btnReport.className = "w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left";
+            
+            if (viewName === 'map') {
+                viewMap.classList.remove('hidden');
+                viewReport.classList.add('hidden');
+                
+                btnMap.className = "w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left";
+                
+                subtitle.innerText = "Surveillance Dashboard";
+                title.innerText = "โครงการบินโดรนก้อทุ่ง";
+                btnPrint.classList.add('hidden');
+                badgeOnline.classList.remove('hidden');
+
+                // บังคับให้ Leaflet คำนวณขนาดใหม่เมื่อถูกดึงกลับมาแสดง
+                setTimeout(() => { if(map) map.invalidateSize(); }, 50);
+
+            } else if (viewName === 'report') {
+                viewMap.classList.add('hidden');
+                viewReport.classList.remove('hidden');
+                
+                btnReport.className = "w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left";
+                
+                subtitle.innerText = "Process Quality Report";
+                title.innerText = "รายงานคุณภาพการประมวลผลภาพถ่าย";
+                btnPrint.classList.remove('hidden');
+                badgeOnline.classList.add('hidden');
+
+                // สร้างกราฟเฉพาะเมื่อเปิดหน้านี้ครั้งแรก เพื่อป้องกันขนาดเพี้ยน
+                if (!chartsRendered) {
+                    renderCharts();
+                    chartsRendered = true;
+                }
+            }
+        }
+
+        function toggleControls() {
+            const ctrl = document.getElementById('map-controls');
+            ctrl.classList.toggle('expanded');
+        }
+
+
+        // ==========================================
+        // MAP LOGIC
+        // ==========================================
+        const map = L.map('map', { zoomControl: false, maxZoom: 22 }).setView([15.0, 100.0], 6);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        const baseLayers = {
+            googleHybrid: L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 22, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google'
+            }),
+            cartoLight: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 22, attribution: 'CartoDB'
+            })
+        };
+        baseLayers.googleHybrid.addTo(map);
+
+        function changeBaseMap(type) {
+            Object.values(baseLayers).forEach(l => map.hasLayer(l) && map.removeLayer(l));
+            baseLayers[type].addTo(map);
+            if (droneLayer) droneLayer.bringToFront();
+        }
+
+        const cogUrl = "https://storage.googleapis.com/survey-bankohthung-projec/BanKoThung_B2_B6_transparent_mosaic_group1_COG.tif";
+        let droneLayer;
+
+        async function initMap() {
+            try {
+                const georaster = await parseGeoraster(cogUrl);
+                droneLayer = new GeoRasterLayer({
+                    georaster: georaster,
+                    opacity: 1,
+                    resolution: 256,
+                    pixelValuesToColorFn: values => {
+                        const r = values[0], g = values[1], b = values[2];
+                        if (r === 0 && g === 0 && b === 0) return null;
+                        return `rgb(${r},${g},${b})`;
+                    }
+                });
+                droneLayer.addTo(map);
+                map.fitBounds(droneLayer.getBounds(), { padding: [50, 50] });
+            } catch (e) {
+                console.error("Map Load Error", e);
+            }
+        }
+
+        document.getElementById('opacity-slider').addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (droneLayer) droneLayer.setOpacity(val / 100);
+            document.getElementById('opacity-val-text').innerText = val + '%';
+        });
+
+        function zoomToLayer() {
+            if (droneLayer) map.fitBounds(droneLayer.getBounds(), { padding: [50, 50], animate: true });
+        }
+
+
+        // ==========================================
+        // REPORT LOGIC (DYNAMIC CSV IMPORT)
+        // ==========================================
+        let reportData = []; 
+        let rmseChartInstance = null;
+        let photoChartInstance = null;
+        const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo2kpljFuLIYMqShXoyujkkO77dD7HlGBndeIebTwzVp6ybSfh3_366YOIteG20Q/pub?output=csv";
+
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets
+        async function fetchGoogleSheetData() {
+            const syncIcon = document.getElementById('sync-icon');
+            const syncText = document.getElementById('sync-text');
+            
+            if (syncIcon && syncText) {
+                syncIcon.setAttribute('data-lucide', 'loader-2');
+                syncIcon.classList.add('animate-spin');
+                syncText.innerText = 'กำลังโหลด...';
+                lucide.createIcons();
+            }
+
+            try {
+                const response = await fetch(googleSheetCsvUrl);
+                if (!response.ok) throw new Error("Network response was not ok");
+                const text = await response.text();
+                
+                reportData = parseCSV(text);
+                
+                calculateKPIs();
+                renderTable();
+                
+                // อัปเดตกราฟถ้าอยู่ในหน้ารายงานแล้ว
+                if (!document.getElementById('view-report').classList.contains('hidden')) {
+                    renderCharts();
+                    chartsRendered = true;
+                }
+            } catch (error) {
+                console.error("Error fetching Google Sheet data:", error);
+                alert("ไม่สามารถเชื่อมต่อเพื่อดึงข้อมูลจาก Google Sheets ได้");
+            } finally {
+                if (syncIcon && syncText) {
+                    syncIcon.setAttribute('data-lucide', 'refresh-cw');
+                    syncIcon.classList.remove('animate-spin');
+                    syncText.innerText = 'ซิงค์ข้อมูล';
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split(/\r?\n/);
+            const result = [];
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue; // ข้ามบรรทัดว่าง
+                const obj = {};
+                const currentLine = lines[i].split(',');
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : '';
+                }
+                result.push(obj);
+            }
+            return result;
+        }
+
+        function calculateKPIs() {
+            let totalBlocks = reportData.length;
+            let sumGSD = 0;
+            let passCount = 0;
+            let failCount = 0;
+
+            reportData.forEach(row => {
+                sumGSD += parseFloat(row['GSD'] || 0);
+                const resultText = (row['Result'] || '').toLowerCase();
+                
+                if (resultText === 'pass') {
+                    passCount++;
+                } else if (resultText !== '' && resultText !== 'pass') {
+                    failCount++;
+                }
+            });
+
+            const avgGSD = totalBlocks > 0 ? (sumGSD / totalBlocks).toFixed(2) : "0.00";
+
+            document.getElementById('kpi-total-blocks').innerText = totalBlocks;
+            document.getElementById('kpi-fail-rate').innerText = failCount;
+            document.getElementById('kpi-avg-gsd').innerText = avgGSD;
+            document.getElementById('kpi-pass-rate').innerText = passCount;
+        }
+
+        function renderCharts() {
+            if (reportData.length === 0) return; // ไม่เรนเดอร์กราฟถ้าไม่มีข้อมูล
+
+            const labels = reportData.map(r => r.Block || 'Unknown');
+            const rmserData = reportData.map(r => parseFloat(r.RMSEr || r['RMSEr'] || 0));
+            // ป้องกันกรณีชื่อคอลัมน์สะกด Asprs2014 ต่างกันเล็กน้อย
+            const asprsData = reportData.map(r => parseFloat(r.Asprs2014 || r['ASPRS 2014'] || 0));
+            const photoData = reportData.map(r => parseInt(r.Photo || 0));
+
+            // กำหนดสีของกราฟแท่ง RMSEr ตามผลลัพธ์ (Pass/Fail)
+            const rmserColors = reportData.map(r => {
+                const isPass = r.Result && r.Result.toLowerCase() === 'pass';
+                return isPass ? 'rgba(34, 197, 94, 0.85)' : 'rgba(239, 68, 68, 0.85)'; // สีเขียว และ สีแดง
+            });
+
+            // เคลียร์กราฟเก่าหากมีการอัปโหลดซ้ำ
+            if (rmseChartInstance) rmseChartInstance.destroy();
+            if (photoChartInstance) photoChartInstance.destroy();
+
+            // 1. Chart - RMSE
+            rmseChartInstance = new Chart(document.getElementById('rmseChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { 
+                            label: 'RMSEr', 
+                            data: rmserData, 
+                            backgroundColor: rmserColors, 
+                            borderRadius: 6 
+                        },
+                        { 
+                            label: 'ASPRS 2014 Limit', 
+                            data: asprsData, 
+                            type: 'line', 
+                            borderColor: '#94a3b8', 
+                            borderDash: [5, 5], 
+                            borderWidth: 2, 
+                            fill: false, 
+                            tension: 0.3, 
+                            pointBackgroundColor: '#94a3b8' 
+                        }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels:{font:{family:'Anuphan'}} } } }
+            });
+
+            // 2. Chart - Photo
+            photoChartInstance = new Chart(document.getElementById('photoChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'จำนวนภาพถ่าย', data: photoData, backgroundColor: '#818cf8', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels:{font:{family:'Anuphan'}} } } }
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            if (reportData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400 text-xs font-bold bg-slate-50 border-b border-slate-100">กำลังรอข้อมูล.. กรุณากดปุ่มซิงค์ข้อมูล</td></tr>`;
+                return;
+            }
+
+            reportData.forEach((row, index) => {
+                const isPass = row.Result && row.Result.toLowerCase() === 'pass';
+                const badgeClass = isPass ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200';
+                const resultText = row.Result || '-';
+                const finalProductGSD = row['final poduct GSD'] || row['final product GSD'] || '-';
+                
+                tbody.innerHTML += `
+                    <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50 transition-colors">
+                        <td class="p-4 border-b border-slate-100 font-bold text-slate-800">${row.Block || '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right">${row.Photo ? parseInt(row.Photo).toLocaleString() : '0'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right">${row.GSD || '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right">${row['Error X [m]'] ? parseFloat(row['Error X [m]']).toFixed(4) : '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right">${row['Error Y [m]'] ? parseFloat(row['Error Y [m]']).toFixed(4) : '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right">${row['Error Z [m]'] ? parseFloat(row['Error Z [m]']).toFixed(4) : '-'}</td>
+                        <!-- Highlighted RMSEr Cell -->
+                        <td class="p-4 border-b border-slate-100 text-right font-black text-blue-600 bg-blue-50/30">${row.RMSEr || '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-right font-semibold text-slate-500">${row.Asprs2014 || row['ASPRS 2014'] || '-'}</td>
+                        <td class="p-4 border-b border-slate-100 text-center font-medium">${finalProductGSD}</td>
+                        <td class="p-4 border-b border-slate-100 text-center">
+                            <span class="px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${badgeClass}">${resultText}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        window.onload = () => {
+            initMap();
+            fetchGoogleSheetData(); // ดึงข้อมูลจาก Google Sheets อัตโนมัติเมื่อโหลดหน้าเว็บ
+        };
+    </script>
+</body>
+</html>
