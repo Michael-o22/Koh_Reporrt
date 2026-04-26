@@ -92,7 +92,7 @@
                 <i data-lucide="file-bar-chart" class="w-5 h-5 shrink-0"></i>
                 <span class="font-semibold text-sm sidebar-text whitespace-nowrap">รายงานโครงการ</span>
             </button>
-            <button class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left opacity-50 cursor-not-allowed">
+            <button onclick="switchView('survey')" id="btn-nav-survey" class="w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left">
                 <i data-lucide="bar-chart-3" class="w-5 h-5 shrink-0"></i>
                 <span class="font-semibold text-sm sidebar-text whitespace-nowrap">รายงานจุดสำรวจ</span>
             </button>
@@ -345,6 +345,13 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- VIEW 3: SURVEY REPORT (REACT APP VIA IFRAME) -->
+        <!-- ============================================== -->
+        <div id="view-survey" class="view-section hidden flex-1 flex flex-col overflow-hidden bg-slate-50 w-full relative">
+            <iframe src="index.html" class="w-full h-full border-0 absolute inset-0"></iframe>
+        </div>
+
     </main>
 
     <script>
@@ -378,8 +385,11 @@
         function switchView(viewName) {
             const viewMap = document.getElementById('view-map');
             const viewReport = document.getElementById('view-report');
+            const viewSurvey = document.getElementById('view-survey');
+            
             const btnMap = document.getElementById('btn-nav-map');
             const btnReport = document.getElementById('btn-nav-report');
+            const btnSurvey = document.getElementById('btn-nav-survey');
             
             const subtitle = document.getElementById('header-subtitle');
             const title = document.getElementById('header-title');
@@ -387,14 +397,20 @@
             const badgeOnline = document.getElementById('badge-online');
 
             // Reset Styles
-            btnMap.className = "w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left";
-            btnReport.className = "w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left";
+            const defaultBtnClass = "w-full flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all group text-left";
+            const activeBtnClass = "w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left";
+            
+            btnMap.className = defaultBtnClass;
+            btnReport.className = defaultBtnClass;
+            btnSurvey.className = defaultBtnClass;
+            
+            viewMap.classList.add('hidden');
+            viewReport.classList.add('hidden');
+            viewSurvey.classList.add('hidden');
             
             if (viewName === 'map') {
                 viewMap.classList.remove('hidden');
-                viewReport.classList.add('hidden');
-                
-                btnMap.className = "w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left";
+                btnMap.className = activeBtnClass;
                 
                 subtitle.innerText = "Surveillance Dashboard";
                 title.innerText = "โครงการบินโดรนก้อทุ่ง";
@@ -405,10 +421,8 @@
                 setTimeout(() => { if(map) map.invalidateSize(); }, 50);
 
             } else if (viewName === 'report') {
-                viewMap.classList.add('hidden');
                 viewReport.classList.remove('hidden');
-                
-                btnReport.className = "w-full flex items-center gap-4 p-3 rounded-xl bg-blue-50 text-blue-600 transition-all group text-left";
+                btnReport.className = activeBtnClass;
                 
                 subtitle.innerText = "Process Quality Report";
                 title.innerText = "รายงานคุณภาพการประมวลผลภาพถ่าย";
@@ -420,6 +434,14 @@
                     renderCharts();
                     chartsRendered = true;
                 }
+            } else if (viewName === 'survey') {
+                viewSurvey.classList.remove('hidden');
+                btnSurvey.className = activeBtnClass;
+                
+                subtitle.innerText = "Survey Point Platform";
+                title.innerText = "รายงานจุดสำรวจ";
+                btnPrint.classList.add('hidden');
+                badgeOnline.classList.remove('hidden');
             }
         }
 
