@@ -113,6 +113,11 @@
         #survey-map .leaflet-popup-tip { box-shadow: none !important; }
         #survey-map a.leaflet-popup-close-button { padding: 8px 8px 0 0 !important; color: #94a3b8 !important; }
 
+        /* Scope CSS ของ Leaflet หน้าแผนที่หลักให้ทันสมัย */
+        #map .leaflet-control-zoom { border: none !important; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important; border-radius: 1rem !important; overflow: hidden; margin-right: 24px; margin-bottom: 24px; }
+        #map .leaflet-control-zoom a { background-color: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(12px); color: #64748b !important; width: 44px !important; height: 44px !important; line-height: 44px !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all 0.2s ease; border-bottom: 1px solid #f1f5f9 !important; font-weight: bold; font-size: 18px; }
+        #map .leaflet-control-zoom a:hover { background-color: white !important; color: #2563eb !important; }
+
         @media (max-width: 1024px) {
             .map-container { height: 480px; position: relative; top: 0; margin-bottom: 2rem; }
         }
@@ -193,21 +198,16 @@
             <!-- Map Container takes full space -->
             <div id="map" class="w-full h-full z-10"></div>
             
-            <!-- Floating Controls (Absolute Right) -->
-            <div class="absolute top-6 right-6 z-[1000] flex flex-col items-end gap-3 pointer-events-none">
+            <!-- Floating Controls (Absolute Left) -->
+            <div class="absolute top-6 left-6 z-[1000] flex flex-col items-start gap-3 pointer-events-none">
                 
-                <!-- Home Button -->
-                <button onclick="zoomToLayer()" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all pointer-events-auto" title="Reset View">
-                    <i data-lucide="home" class="w-5 h-5"></i>
-                </button>
-
                 <!-- Stats Button -->
-                <div class="relative flex justify-end pointer-events-auto">
-                    <button onclick="togglePanel('stats-popup')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all" title="ข้อมูลโครงการ">
+                <div class="relative flex justify-start pointer-events-auto">
+                    <button onclick="togglePanel('stats-popup')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all hover:scale-105 active:scale-95" title="ข้อมูลโครงการ">
                         <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
                     </button>
                     <!-- Stats Popup Dashboard -->
-                    <div id="stats-popup" class="absolute right-[56px] top-0 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 w-80 transform transition-all duration-300 origin-right scale-0 opacity-0 pointer-events-none">
+                    <div id="stats-popup" class="absolute left-[56px] top-0 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 w-80 transform transition-all duration-300 origin-left scale-0 opacity-0 pointer-events-none">
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                                 <div class="p-1.5 bg-blue-100 text-blue-600 rounded-lg"><i data-lucide="pie-chart" class="w-4 h-4"></i></div>
@@ -235,7 +235,7 @@
                             <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">จำนวนบล๊อก</p>
                                 <div class="flex items-baseline gap-1">
-                                    <span class="text-xl font-black text-slate-800">6</span>
+                                    <span class="text-xl font-black text-slate-800">16</span>
                                     <span class="text-[10px] font-bold text-slate-400">บล็อก</span>
                                 </div>
                             </div>
@@ -252,10 +252,19 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Floating Controls (Absolute Right) -->
+            <div class="absolute top-6 right-6 z-[1000] flex flex-col items-end gap-3 pointer-events-none">
+                
+                <!-- Home Button -->
+                <button onclick="zoomToLayer()" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all hover:scale-105 active:scale-95 pointer-events-auto" title="Reset View">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                </button>
 
                 <!-- Base Map Popup -->
                 <div class="relative flex justify-end pointer-events-auto">
-                    <button onclick="togglePanel('basemap-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all" title="Base Map">
+                    <button onclick="togglePanel('basemap-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all hover:scale-105 active:scale-95" title="Base Map">
                         <i data-lucide="map" class="w-5 h-5"></i>
                     </button>
                     <div id="basemap-panel" class="absolute right-[56px] top-0 w-60 bg-white/95 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-white/50 transform transition-all duration-300 origin-right scale-0 opacity-0 pointer-events-none">
@@ -269,7 +278,7 @@
 
                 <!-- Transparency Popup -->
                 <div class="relative flex justify-end pointer-events-auto">
-                    <button onclick="togglePanel('transparency-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all" title="Transparency">
+                    <button onclick="togglePanel('transparency-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all hover:scale-105 active:scale-95" title="Transparency">
                         <i data-lucide="sliders" class="w-5 h-5"></i>
                     </button>
                     <div id="transparency-panel" class="absolute right-[56px] top-0 w-60 bg-white/95 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-white/50 transform transition-all duration-300 origin-right scale-0 opacity-0 pointer-events-none">
@@ -283,18 +292,19 @@
                 
                 <!-- Drone Layers Popup -->
                 <div class="relative flex justify-end pointer-events-auto">
-                    <button onclick="togglePanel('layers-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all" title="Drone Layers">
+                    <button onclick="togglePanel('layers-panel')" class="w-[44px] h-[44px] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white transition-all hover:scale-105 active:scale-95" title="Drone Layers">
                         <i data-lucide="layers" class="w-5 h-5"></i>
                     </button>
                     <div id="layers-panel" class="absolute right-[56px] top-0 w-72 max-h-[60vh] flex flex-col bg-white/95 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-white/50 transform transition-all duration-300 origin-right scale-0 opacity-0 pointer-events-none">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 shrink-0">Drone Layers</p>
-                        <div class="flex flex-col gap-2 overflow-y-auto no-scrollbar mb-3" id="layer-toggles-list">
-                            <!-- Checkboxes will be rendered here -->
+                        <div class="flex justify-between items-center mb-3 shrink-0">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Drone Layers</p>
+                            <div class="flex gap-1.5">
+                                <button onclick="selectAllLayers()" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 hover:text-blue-800 transition-colors">Select All</button>
+                                <button onclick="unselectAllLayers()" class="text-[9px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-colors">Unselect All</button>
+                            </div>
                         </div>
-                        <div class="space-y-2 pt-3 border-t border-slate-100 shrink-0">
-                            <button onclick="refreshMap()" class="w-full bg-slate-100 text-slate-700 text-[10px] py-3 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                                <i data-lucide="refresh-cw" class="w-3 h-3"></i> รีเฟรชแผนที่
-                            </button>
+                        <div class="flex flex-col gap-2 overflow-y-auto no-scrollbar mb-1" id="layer-toggles-list">
+                            <!-- Checkboxes will be rendered here -->
                         </div>
                     </div>
                 </div>
@@ -303,10 +313,13 @@
 
             <!-- Bottom Status -->
             <div class="absolute bottom-6 left-6 z-[1000] pointer-events-none">
-                <div class="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/50 shadow-lg">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span class="text-[10px] font-bold text-slate-700 tracking-tight uppercase">Cloud COG Connected</span>
+                <div class="bg-slate-900/85 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-700 shadow-2xl">
+                    <div class="flex items-center gap-3">
+                        <div class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </div>
+                        <span class="text-[10px] font-bold text-white tracking-widest uppercase">Cloud COG Connected</span>
                     </div>
                 </div>
             </div>
@@ -645,29 +658,30 @@
                 const val = document.getElementById('opacity-slider').value;
                 layer.setOpacity(val / 100);
             } else {
-                layer.setOpacity(0); // บังคับซ่อนทันทีเพื่อแก้บัคภาพค้างของ GeoRasterLayer
+                // ลบเลเยอร์ออกจากแผนที่โดยตรงเพื่อป้องกันภาพค้างบน Canvas
                 if (map.hasLayer(layer)) {
                     map.removeLayer(layer);
                 }
             }
         }
 
-        function refreshMap() {
-            const icon = document.querySelector('button[onclick="refreshMap()"] i');
-            if (icon) icon.classList.add('animate-spin');
-            
-            // ลบเลเยอร์โดรนทั้งหมดออกจากแผนที่
-            Object.values(droneLayerMap).forEach(layer => {
-                layer.setOpacity(0); // บังคับโปร่งใสก่อนลบ
-                if (map.hasLayer(layer)) map.removeLayer(layer);
+        function selectAllLayers() {
+            cogUrls.forEach((url, idx) => {
+                const cb = document.getElementById(`layer-toggle-${idx}`);
+                if (cb && !cb.checked) {
+                    cb.checked = true;
+                    toggleLayer(url, true);
+                }
             });
-            
-            droneLayerMap = {};
-            globalBounds = null;
-            
-            initMap().then(() => {
-                if (icon) icon.classList.remove('animate-spin');
-                lucide.createIcons();
+        }
+
+        function unselectAllLayers() {
+            cogUrls.forEach((url, idx) => {
+                const cb = document.getElementById(`layer-toggle-${idx}`);
+                if (cb && cb.checked) {
+                    cb.checked = false;
+                    toggleLayer(url, false);
+                }
             });
         }
 
@@ -706,10 +720,8 @@
                     // ตรวจสอบว่า checkbox ของเลเยอร์นี้ถูกเลือกอยู่หรือไม่ก่อนแสดง
                     const idx = cogUrls.indexOf(url);
                     const checkbox = document.getElementById(`layer-toggle-${idx}`);
-                    if (!checkbox || checkbox.checked) {
+                    if (checkbox && checkbox.checked) {
                         layer.addTo(map);
-                    } else {
-                        layer.setOpacity(0);
                     }
 
                     // คำนวณขอบเขตแผนที่รวม
