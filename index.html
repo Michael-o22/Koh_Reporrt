@@ -128,7 +128,6 @@
 </head>
 <body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
 
-    <!-- Sidebar Navigation -->
     <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 relative z-30">
         <div class="p-6 flex items-center justify-between">
             <div class="flex items-center gap-3 overflow-hidden">
@@ -168,30 +167,31 @@
         </nav>
 
         <div class="p-6 border-t border-slate-100">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden shadow-sm">
-                    <img src="https://upload.wikimedia.org/wikipedia/th/thumb/7/77/Department_of_Lands_Logo.svg/1200px-Department_of_Lands_Logo.svg.png" alt="กรมที่ดิน" class="w-full h-full object-contain p-0.5">
-                </div>
+            <div class="flex items-center overflow-hidden">
                 <div class="sidebar-text whitespace-nowrap">
-                    <p class="text-xs font-bold text-slate-700 truncate w-36" title="ศูนย์ข้อมูลแผนที่รูปแปลงที่ดิน">ศูนย์ข้อมูลแผนที่รูปแปลงที่ดิน</p>
+                    <p class="text-xs font-bold text-slate-700 truncate w-full" title="ศูนย์ข้อมูลแผนที่รูปแปลงที่ดิน">ศูนย์ข้อมูลแผนที่รูปแปลงที่ดิน</p>
                     <p class="text-[10px] text-slate-400">กรมที่ดิน</p>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
     <main class="flex-1 flex flex-col min-w-0 relative">
         
         <!-- Header Area (ใช้ร่วมกัน) -->
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-20">
             <div class="min-w-0">
-                <h2 id="header-subtitle" class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-0.5">Surveillance Dashboard</h2>
+                <h2 id="header-subtitle" class="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-0.5">Koh Thung Dashboard</h2>
                 <h1 id="header-title" class="text-xl font-bold text-slate-900 truncate tracking-tight">โครงการบินโดรนก้อทุ่ง</h1>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-                <button id="btn-print" onclick="window.print()" class="hidden px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
-                    <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์รายงาน
+                <!-- เพิ่ม ID "btn-sync" และซ่อนเป็นค่าเริ่มต้น (hidden) -->
+                <button id="btn-sync" onclick="fetchGoogleSheetData()" class="hidden px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition flex items-center justify-center text-xs font-bold gap-2" title="ซิงค์ข้อมูล">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="header-sync-icon"></i>
+                </button>
+                <!-- ปรับปุ่มให้เปิดหน้า Google Drive แทนการพิมพ์ -->
+                <button id="btn-print" onclick="window.open('https://drive.google.com/drive/u/0/folders/1P9lKsx8FPJ7J9D8FjTzd31lAzgFEz4h8', '_blank')" class="hidden px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
+                    <i data-lucide="upload" class="w-4 h-4"></i> รายงานฉบับเต็ม
                 </button>
                 <span id="badge-online" class="px-3 py-1.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-lg border border-green-100 flex items-center gap-2">
                     <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -344,10 +344,10 @@
                 <!-- Report KPIs & Data Source Sync Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     
-                    <!-- 1. จำนวนบล็อกทั้งหมด -->
+                    <!-- 1. ประมวลผลทั้งหมด -->
                     <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
                         <div class="flex justify-between items-start mb-2">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จำนวนบล็อกทั้งหมด</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ประมวลผลทั้งหมด</p>
                             <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i>
                         </div>
                         <div class="flex items-baseline gap-1">
@@ -355,20 +355,8 @@
                             <span class="text-xs font-bold text-slate-400">บล็อก</span>
                         </div>
                     </div>
-                    
-                    <!-- 2. ค่า GSD เฉลี่ยที่ทำการบิน -->
-                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
-                        <div class="flex justify-between items-start mb-2">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ค่า GSD เฉลี่ยที่ทำการบิน</p>
-                            <i data-lucide="focus" class="w-4 h-4 text-emerald-400"></i>
-                        </div>
-                        <div class="flex items-baseline gap-1">
-                            <span id="kpi-avg-gsd" class="text-3xl font-black text-slate-800 tracking-tight">0.00</span>
-                            <span class="text-xs font-bold text-slate-400">ซม.</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 3. ผ่านเกณฑ์มาตรฐาน -->
+
+                    <!-- 2. ผ่านเกณฑ์มาตรฐาน -->
                     <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-center">
                         <div class="absolute right-0 top-0 w-16 h-16 bg-green-50 rounded-bl-[100%] z-0"></div>
                         <div class="flex justify-between items-start mb-2 relative z-10">
@@ -381,7 +369,7 @@
                         </div>
                     </div>
 
-                    <!-- 4. ไม่ผ่านเกณฑ์ -->
+                    <!-- 3. ไม่ผ่านเกณฑ์ -->
                     <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col justify-center">
                         <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-[100%] z-0"></div>
                         <div class="flex justify-between items-start mb-2 relative z-10">
@@ -393,16 +381,31 @@
                             <span class="text-xs font-bold text-slate-400">บล็อก</span>
                         </div>
                     </div>
-
-                    <!-- 5. ซิงค์ข้อมูล (Data Source Button) -->
-                    <div onclick="fetchGoogleSheetData()" class="stat-card bg-blue-600 p-5 rounded-2xl border border-blue-500 shadow-lg shadow-blue-200 flex flex-col justify-center items-center cursor-pointer group text-white h-full relative overflow-hidden">
-                        <div class="absolute right-0 top-0 w-24 h-24 bg-white opacity-10 rounded-bl-[100%] z-0 transition-transform group-hover:scale-110"></div>
-                        <div class="relative z-10 flex flex-col items-center">
-                            <i data-lucide="refresh-cw" id="sync-icon" class="w-6 h-6 mb-2"></i>
-                            <span id="sync-text" class="text-sm font-bold tracking-tight">ซิงค์ข้อมูล</span>
-                            <span class="text-[9px] font-medium text-blue-200 mt-1 text-center">ดึงข้อมูล Google Sheets</span>
+                    
+                    <!-- 4. ค่า GSD เฉลี่ยที่ทำการบิน -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ค่า GSD เฉลี่ยที่ทำการบิน</p>
+                            <i data-lucide="focus" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="kpi-avg-gsd" class="text-3xl font-black text-slate-800 tracking-tight">0.00</span>
+                            <span class="text-xs font-bold text-slate-400">ซม.</span>
                         </div>
                     </div>
+                    
+                    <!-- 5. ค่า GSD Othomosaic -->
+                    <div class="stat-card bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ค่า GSD Othomosaic</p>
+                            <i data-lucide="map" class="w-4 h-4 text-purple-500"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-3xl font-black text-slate-800 tracking-tight">6</span>
+                            <span class="text-xs font-bold text-slate-400">ซม.</span>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Charts -->
@@ -411,10 +414,25 @@
                     <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
                         <div class="mb-6">
                             <h3 class="text-base font-bold text-slate-800">เปรียบเทียบค่าความคลาดเคลื่อน (RMSEr vs ASPRS 2014)</h3>
-                            <p class="text-sm text-slate-500 mt-1">วิเคราะห์ความคลาดเคลื่อนทางตำแหน่งของแต่ละบล็อกการบิน <span class="font-bold text-green-500">(สีเขียว: ผ่านเกณฑ์)</span>, <span class="font-bold text-red-500">(สีแดง: ไม่ผ่านเกณฑ์)</span></p>
+                            <p class="text-sm text-slate-500 mt-1">วิเคราะห์ความคลาดเคลื่อนทางตำแหน่งของแต่ละบล็อกการบิน</p>
                         </div>
                         <div class="h-96 relative w-full">
                             <canvas id="rmseChart"></canvas>
+                        </div>
+                        <!-- Custom Legend -->
+                        <div class="mt-5 flex items-center justify-center gap-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500 opacity-85"></span>
+                                <span class="text-xs font-bold text-slate-600">ผ่านเกณฑ์</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-500 opacity-85"></span>
+                                <span class="text-xs font-bold text-slate-600">ไม่ผ่านเกณฑ์</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-0.5 border-t-2 border-dashed border-slate-400"></span>
+                                <span class="text-xs font-bold text-slate-600">ASPRS 2014 Limit</span>
+                            </div>
                         </div>
                     </div>
 
@@ -426,6 +444,13 @@
                         </div>
                         <div class="h-96 relative w-full">
                             <canvas id="photoChart"></canvas>
+                        </div>
+                        <!-- Custom Legend สำหรับกราฟภาพถ่าย -->
+                        <div class="mt-5 flex items-center justify-center gap-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-indigo-400 opacity-85"></span>
+                                <span class="text-xs font-bold text-slate-600">จำนวนภาพถ่าย</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -519,6 +544,7 @@
             const subtitle = document.getElementById('header-subtitle');
             const title = document.getElementById('header-title');
             const btnPrint = document.getElementById('btn-print');
+            const btnSync = document.getElementById('btn-sync'); // ดึง element ปุ่มซิงค์ข้อมูล
             const badgeOnline = document.getElementById('badge-online');
 
             // Reset Styles
@@ -537,9 +563,10 @@
                 viewMap.classList.remove('hidden');
                 btnMap.className = activeBtnClass;
                 
-                subtitle.innerText = "Surveillance Dashboard";
+                subtitle.innerText = "Koh Thung Dashboard";
                 title.innerText = "โครงการบินโดรนก้อทุ่ง";
                 btnPrint.classList.add('hidden');
+                btnSync.classList.add('hidden'); // ซ่อนปุ่มซิงค์ในหน้าแผนที่
                 badgeOnline.classList.remove('hidden');
 
                 setTimeout(() => { if(map) map.invalidateSize(); }, 50);
@@ -551,6 +578,7 @@
                 subtitle.innerText = "Process Quality Report";
                 title.innerText = "รายงานคุณภาพการประมวลผลภาพถ่าย";
                 btnPrint.classList.remove('hidden');
+                btnSync.classList.remove('hidden'); // แสดงปุ่มซิงค์ในหน้ารายงาน
                 badgeOnline.classList.add('hidden');
 
                 if (!chartsRendered) {
@@ -561,9 +589,10 @@
                 viewSurvey.classList.remove('hidden');
                 btnSurvey.className = activeBtnClass;
                 
-                subtitle.innerText = "Survey Point Platform";
+                subtitle.innerText = "Survey Point Platform Report";
                 title.innerText = "รายงานจุดสำรวจ";
                 btnPrint.classList.add('hidden');
+                btnSync.classList.add('hidden'); // ซ่อนปุ่มซิงค์ในหน้า survey
                 badgeOnline.classList.remove('hidden');
                 
                 // บังคับ Resize เพื่อแก้ปัญหา Recharts และ Leaflet แสดงผลเพี้ยนในแท็บที่ถูกซ่อน
@@ -800,14 +829,10 @@
         const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo2kpljFuLIYMqShXoyujkkO77dD7HlGBndeIebTwzVp6ybSfh3_366YOIteG20Q/pub?output=csv";
 
         async function fetchGoogleSheetData() {
-            const syncIcon = document.getElementById('sync-icon');
-            const syncText = document.getElementById('sync-text');
+            const syncIcon = document.getElementById('header-sync-icon');
             
-            if (syncIcon && syncText) {
-                syncIcon.setAttribute('data-lucide', 'loader-2');
+            if (syncIcon) {
                 syncIcon.classList.add('animate-spin');
-                syncText.innerText = 'กำลังโหลด...';
-                lucide.createIcons();
             }
 
             try {
@@ -828,11 +853,8 @@
                 console.error("Error fetching Google Sheet data:", error);
                 alert("ไม่สามารถเชื่อมต่อเพื่อดึงข้อมูลจาก Google Sheets ได้");
             } finally {
-                if (syncIcon && syncText) {
-                    syncIcon.setAttribute('data-lucide', 'refresh-cw');
+                if (syncIcon) {
                     syncIcon.classList.remove('animate-spin');
-                    syncText.innerText = 'ซิงค์ข้อมูล';
-                    lucide.createIcons();
                 }
             }
         }
@@ -904,7 +926,7 @@
                         { label: 'ASPRS 2014 Limit', data: asprsData, type: 'line', borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.3, pointBackgroundColor: '#94a3b8' }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels:{font:{family:'Anuphan'}} } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
             photoChartInstance = new Chart(document.getElementById('photoChart').getContext('2d'), {
@@ -915,7 +937,8 @@
                         { label: 'จำนวนภาพถ่าย', data: photoData, backgroundColor: '#818cf8', borderRadius: 6 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels:{font:{family:'Anuphan'}} } } }
+                // ปิดการแสดง legend รูปแบบเดิมของ Chart.js
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
@@ -1255,6 +1278,7 @@
                                 <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl flex flex-col justify-center"><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 opacity-60">Avg Elev.</p><h3 className="text-3xl font-black text-white">{stats.elev}m</h3></div>
                             </section>
 
+                            {}
                             {/* Data Table */}
                             <section className="bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden flex flex-col">
                                 <div className="p-8 border-b border-slate-50 bg-slate-50/20">
@@ -1328,6 +1352,8 @@
                                 </div>
                             </section>
                         </div>
+                        
+                        {}
                         <div className="lg:col-span-5 map-container">
                             <div className="bg-white p-2 rounded-[2.5rem] shadow-premium border border-slate-100 h-full relative overflow-hidden">
                                 {/* เปลี่ยน ID กล่องแผนที่เป็น survey-map */}
